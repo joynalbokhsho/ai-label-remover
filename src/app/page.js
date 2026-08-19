@@ -140,7 +140,7 @@ export default function Home() {
   return (
     <main className="container">
       <header className="header">
-        <img src="/logo.jpg" alt="Logo" className="logo" style={{ width: '80px', height: '80px', borderRadius: '20px', marginBottom: '16px', boxShadow: '0 4px 12px rgba(0,0,0,0.5)' }} />
+        <img src="/logo.png" alt="Logo" className="logo" style={{ width: '80px', height: '80px', borderRadius: '20px', marginBottom: '16px', boxShadow: '0 4px 12px rgba(0,0,0,0.5)' }} />
         <h1>Remove AI Label <span>Instantly</span></h1>
         <p>Strip C2PA, XMP, EXIF, and PNG metadata entirely within your browser.</p>
       </header>
