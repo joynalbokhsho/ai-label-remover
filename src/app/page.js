@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { UploadCloud, Download, CheckCircle, EyeOff, Shield, RefreshCw, BarChart2 } from 'lucide-react';
 
 export default function Home() {
@@ -42,7 +42,7 @@ export default function Home() {
     }
   };
 
-  const processFile = (file) => {
+  const processFile = useCallback((file) => {
     const lowerName = file.name.toLowerCase();
     const isJfif = lowerName.endsWith('.jfif');
     
@@ -94,7 +94,29 @@ export default function Home() {
       img.src = event.target.result;
     };
     reader.readAsDataURL(file);
-  };
+  }, []);
+
+  // Handle global paste events
+  useEffect(() => {
+    const handlePaste = (e) => {
+      const items = e.clipboardData?.items;
+      if (!items) return;
+      
+      for (let i = 0; i < items.length; i++) {
+        if (items[i].type.startsWith('image/')) {
+          const file = items[i].getAsFile();
+          if (file) {
+            e.preventDefault();
+            processFile(file);
+            break;
+          }
+        }
+      }
+    };
+
+    window.addEventListener('paste', handlePaste);
+    return () => window.removeEventListener('paste', handlePaste);
+  }, [processFile]);
 
   const handleDownload = () => {
     if (!previewUrl) return;
@@ -140,7 +162,7 @@ export default function Home() {
           >
             <UploadCloud />
             <div>
-              <div className="drop-zone-title">Click or drag image here</div>
+              <div className="drop-zone-title">Click, drag, or paste image here</div>
               <div className="drop-zone-subtitle">JPG, PNG, WebP, JFIF • Max 15MB</div>
             </div>
             <input 
