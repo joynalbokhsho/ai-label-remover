@@ -203,6 +203,10 @@ export default function Home() {
         <Shield size={18} />
         100% Offline Processing. Your files never leave your device.
       </div>
+      
+      <footer style={{ marginTop: '3rem', textAlign: 'center', fontSize: '0.875rem', color: 'var(--text-muted)', paddingBottom: '2rem' }}>
+        This project belong to <a href="https://bdzonemc.com" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--primary)', textDecoration: 'none', fontWeight: '500' }}>BD ZONE</a>
+      </footer>
     </main>
   );
 }
