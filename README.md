@@ -1,36 +1,81 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# Remove AI Label Instantly 🛡️
 
-## Getting Started
+A privacy-first, client-side web application built with [Next.js](https://nextjs.org/) that strips embedded metadata from images directly in your browser. This tool helps remove C2PA, XMP, EXIF, and PNG metadata to bypass automated AI-generated labels on platforms like Instagram and Facebook.
 
-First, run the development server:
+## Features ✨
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+- **100% Offline Processing**: All image processing happens locally within your browser using the HTML5 Canvas API. Your files are **never** uploaded to any server.
+- **Removes All Metadata**: Effectively strips out EXIF, XMP, C2PA, and other invisible metadata tags.
+- **Bypasses AI Labels**: Prevents false-positive or forced "AI Generated" labels on social media platforms.
+- **Format Support**: Supports `JPG`, `PNG`, `WebP`, and `JFIF`. 
+- **Auto-Conversion**: Automatically converts `WebP` and `JFIF` uploads into clean `.jpg` files upon download.
+- **Live Global Stats**: Uses Redis to anonymously track the total number of images cleaned globally.
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Tech Stack 🛠️
 
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
+- **Framework**: [Next.js](https://nextjs.org) (App Router)
+- **Styling**: Vanilla CSS
+- **Icons**: [Lucide React](https://lucide.dev/)
+- **Database**: [Redis](https://redis.io/) (via `ioredis`) for tracking the global processed image count
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Getting Started 🚀
 
-## Learn More
+### Prerequisites
 
-To learn more about Next.js, take a look at the following resources:
+- Node.js 18.x or later
+- A running instance of Redis (optional, but required for the stats counter to work)
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### Installation
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+1. **Clone the repository:**
+   ```bash
+   git clone https://github.com/joynalbokhsho/ai-label-remover.git
+   cd ai-label-remover
+   ```
 
-## Deploy on Vercel
+2. **Install dependencies:**
+   ```bash
+   npm install
+   # or yarn install / pnpm install
+   ```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+3. **Set up Environment Variables:**
+   Copy the example environment file and update it with your Redis connection string if necessary:
+   ```bash
+   cp .env.example .env.local
+   ```
+   *By default, the app looks for a local Redis instance at `redis://localhost:6379`.*
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+4. **Run the development server:**
+   ```bash
+   npm run dev
+   ```
+
+5. **Open the App:**
+   Navigate to [http://localhost:3000](http://localhost:3000) in your browser.
+
+## How it Works & Bypassing Facebook AI Labels 🧠
+
+Social media platforms like Facebook and Instagram rely on hidden metadata embedded inside image files to detect if an image was created or edited by AI. Specifically, they look for:
+- **C2PA (Coalition for Content Provenance and Authenticity)** tags.
+- **IPTC/XMP** metadata (often injected by tools like Photoshop's Generative Fill, Midjourney, or DALL-E).
+- **EXIF data** containing software signatures.
+
+If Facebook's systems detect these specific metadata tags upon upload, they will automatically slap an "AI Info" or "Made with AI" label on your post, often without giving you the option to remove it.
+
+**Our application bypasses this completely by destroying the metadata:**
+1. You select or drag-and-drop your AI-generated image.
+2. The browser reads the image file and loads it into a virtual HTML5 `<canvas>`.
+3. The `<canvas>` strictly only cares about the **visible pixel data** (the colors and shapes) and fundamentally ignores all hidden file metadata.
+4. The canvas then exports those raw pixels into a brand-new image file (`canvas.toDataURL`). 
+5. Because the newly exported file is built entirely from scratch from raw pixels, all the original C2PA, XMP, and EXIF tags are permanently left behind and destroyed. 
+
+When you upload this "cleaned" image to Facebook or Instagram, their scanners find absolutely zero AI metadata, and your image is posted normally without the automated label.
+
+## Contributing 🤝
+
+Contributions, issues, and feature requests are welcome! Feel free to check the [issues page](https://github.com/joynalbokhsho/ai-label-remover/issues).
+
+## License 📝
+
+This project is open-source and available under the [MIT License](LICENSE).

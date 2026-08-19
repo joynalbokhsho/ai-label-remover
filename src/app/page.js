@@ -1,69 +1,186 @@
-import Image from "next/image";
+'use client';
+
+import { useState, useRef, useEffect } from 'react';
+import { UploadCloud, Download, CheckCircle, EyeOff, Shield, RefreshCw, BarChart2 } from 'lucide-react';
 
 export default function Home() {
+  const [isDragging, setIsDragging] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState(null);
+  const [originalFile, setOriginalFile] = useState(null);
+  const [stats, setStats] = useState(0);
+  const fileInputRef = useRef(null);
+
+  // Fetch stats on mount
+  useEffect(() => {
+    fetch('/api/stats')
+      .then(res => res.json())
+      .then(data => setStats(data.count))
+      .catch(err => console.error('Error fetching stats:', err));
+  }, []);
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    setIsDragging(false);
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      processFile(e.dataTransfer.files[0]);
+    }
+  };
+
+  const handleFileChange = (e) => {
+    if (e.target.files && e.target.files.length > 0) {
+      processFile(e.target.files[0]);
+    }
+  };
+
+  const processFile = (file) => {
+    const lowerName = file.name.toLowerCase();
+    const isJfif = lowerName.endsWith('.jfif');
+    
+    if (!file.type.startsWith('image/') && !isJfif) {
+      alert('Please upload a valid image file (JPG, PNG, WebP, JFIF).');
+      return;
+    }
+
+    let exportType = file.type;
+    let exportName = file.name;
+
+    if (lowerName.endsWith('.webp') || isJfif) {
+      exportType = 'image/jpeg';
+      exportName = file.name.replace(/\.(webp|jfif)$/i, '.jpg');
+    }
+
+    setOriginalFile({
+      name: exportName,
+      type: exportType
+    });
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        // Create canvas to redraw the image (strips metadata)
+        const canvas = document.createElement('canvas');
+        canvas.width = img.width;
+        canvas.height = img.height;
+        const ctx = canvas.getContext('2d');
+        
+        // Draw image on canvas
+        if (exportType === 'image/jpeg') {
+          ctx.fillStyle = '#FFFFFF';
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+        }
+        ctx.drawImage(img, 0, 0);
+
+        // Convert canvas back to data URL (quality 1.0 for max quality)
+        const cleanURL = canvas.toDataURL(exportType, 1.0);
+        setPreviewUrl(cleanURL);
+
+        // Track the processed image via API
+        fetch('/api/stats', { method: 'POST' })
+          .then(res => res.json())
+          .then(data => setStats(data.count))
+          .catch(err => console.error('Error updating stats:', err));
+      };
+      img.src = event.target.result;
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleDownload = () => {
+    if (!previewUrl) return;
+    
+    const a = document.createElement('a');
+    a.href = previewUrl;
+    a.download = `clean_${originalFile.name}`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  };
+
+  const handleReset = () => {
+    setPreviewUrl(null);
+    setOriginalFile(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.js
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+    <main className="container">
+      <header className="header">
+        <h1>Remove AI Label <span>Instantly</span></h1>
+        <p>Strip C2PA, XMP, EXIF, and PNG metadata entirely within your browser.</p>
+      </header>
+
+      <section className="card">
+        {stats > 0 && (
+          <div className="stats-badge">
+            <BarChart2 size={14} />
+            Images Cleaned: <span>{stats.toLocaleString()}</span>
+          </div>
+        )}
+
+        {!previewUrl ? (
+          <div 
+            className={`drop-zone ${isDragging ? 'dragover' : ''}`}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+            onClick={() => fileInputRef.current?.click()}
           >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
+            <UploadCloud />
+            <div>
+              <div className="drop-zone-title">Click or drag image here</div>
+              <div className="drop-zone-subtitle">JPG, PNG, WebP, JFIF • Max 15MB</div>
+            </div>
+            <input 
+              type="file" 
+              ref={fileInputRef}
+              onChange={handleFileChange}
+              accept="image/jpeg, image/png, image/webp, .jfif" 
+              style={{ display: 'none' }} 
             />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+          </div>
+        ) : (
+          <div className="preview-container">
+            <img src={previewUrl} alt="Cleaned Image Preview" className="preview-image" />
+            <div className="preview-actions">
+              <button className="btn" onClick={handleDownload}>
+                <Download size={20} />
+                Download Cleaned Image
+              </button>
+              <button className="btn btn-secondary" onClick={handleReset}>
+                <RefreshCw size={20} />
+                Process Another
+              </button>
+            </div>
+          </div>
+        )}
+      </section>
+
+      <div className="chips">
+        <div className="chip"><CheckCircle size={16} /> Strips C2PA</div>
+        <div className="chip"><CheckCircle size={16} /> Strips XMP</div>
+        <div className="chip"><CheckCircle size={16} /> Strips EXIF</div>
+        <div className="chip" style={{ color: 'var(--primary)', backgroundColor: 'rgba(139, 92, 246, 0.1)', borderColor: 'rgba(139, 92, 246, 0.2)' }}>
+          <EyeOff size={16} /> Bypasses IG/FB AI Label
         </div>
-      </main>
-    </div>
+      </div>
+      
+      <div className="privacy-note">
+        <Shield size={18} />
+        100% Offline Processing. Your files never leave your device.
+      </div>
+    </main>
   );
 }
